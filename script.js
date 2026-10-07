@@ -15,6 +15,7 @@ const db = firebase.firestore();
 let activeEventId = null;
 let activeEventData = null;
 let guestsUnsubscribe = null;
+let editingEventId = null; // si null tunapohariri tukio
 
 // ============ HELPERS ============
 function randomCode(len){
@@ -32,6 +33,13 @@ function escapeHtml(str){
 
 function sanitizeFilename(name){
   return name.replace(/[^a-z0-9\-_]+/gi, '_');
+}
+
+function futaFomuYaTukio(){
+  document.getElementById('eventName').value = '';
+  document.getElementById('eventCode').value = '';
+  document.getElementById('eventDate').value = '';
+  document.getElementById('eventVenue').value = '';
 }
 
 // ============ EVENTS ============
@@ -53,7 +61,8 @@ async function loadEvents(){
   }
 }
 
-async function createNewEvent(){
+// Unda tukio jipya AU hifadhi mabadiliko ya tukio linalohaririwa
+async function saveEvent(){
   const name = document.getElementById('eventName').value.trim();
   const code = document.getElementById('eventCode').value.trim().toUpperCase().replace(/\s+/g,'');
   const date = document.getElementById('eventDate').value;
@@ -65,6 +74,25 @@ async function createNewEvent(){
     return;
   }
 
+  // ----- Hali ya kuhariri -----
+  if(editingEventId){
+    const id = editingEventId;
+    msg.textContent = 'Inahifadhi mabadiliko...';
+    try{
+      await db.collection('events').doc(id).update({ name, code, date, venue });
+      cancelEditEvent();
+      await loadEvents();
+      document.getElementById('selectEvent').value = id;
+      await onEventSelected(id);
+      msg.textContent = 'Mabadiliko yamehifadhiwa!';
+    }catch(err){
+      console.error(err);
+      msg.textContent = 'Hitilafu: ' + err.message;
+    }
+    return;
+  }
+
+  // ----- Hali ya kuunda tukio jipya -----
   msg.textContent = 'Inaunda tukio...';
   try{
     const docRef = await db.collection('events').add({
@@ -72,10 +100,7 @@ async function createNewEvent(){
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     msg.textContent = 'Tukio limeundwa!';
-    document.getElementById('eventName').value = '';
-    document.getElementById('eventCode').value = '';
-    document.getElementById('eventDate').value = '';
-    document.getElementById('eventVenue').value = '';
+    futaFomuYaTukio();
     await loadEvents();
     document.getElementById('selectEvent').value = docRef.id;
     onEventSelected(docRef.id);
@@ -85,10 +110,77 @@ async function createNewEvent(){
   }
 }
 
+function startEditEvent(){
+  if(!activeEventId || !activeEventData) return;
+
+  editingEventId = activeEventId;
+  document.getElementById('eventName').value = activeEventData.name || '';
+  document.getElementById('eventCode').value = activeEventData.code || '';
+  document.getElementById('eventDate').value = activeEventData.date || '';
+  document.getElementById('eventVenue').value = activeEventData.venue || '';
+
+  document.getElementById('eventSaveBtn').textContent = 'Hifadhi Mabadiliko';
+  document.getElementById('eventCancelBtn').style.display = 'inline-block';
+  document.getElementById('eventStatusMsg').textContent =
+    'Unahariri: ' + (activeEventData.name || '') + '. Badilisha kisha bonyeza Hifadhi Mabadiliko.';
+}
+
+function cancelEditEvent(){
+  editingEventId = null;
+  futaFomuYaTukio();
+  document.getElementById('eventSaveBtn').textContent = 'Unda Tukio Jipya';
+  document.getElementById('eventCancelBtn').style.display = 'none';
+  document.getElementById('eventStatusMsg').textContent = '';
+}
+
+async function deleteEvent(){
+  if(!activeEventId || !activeEventData) return;
+
+  const eventId = activeEventId;
+  const jina = activeEventData.name;
+  const msg = document.getElementById('eventStatusMsg');
+
+  if(!confirm('Una uhakika unataka kufuta tukio "' + jina + '" pamoja na wageni wake wote? Hili haliwezi kurudishwa.')) return;
+
+  msg.textContent = 'Inafuta tukio na wageni wake...';
+
+  // Simamisha orodha ya moja kwa moja wakati wa kufuta
+  if(guestsUnsubscribe) guestsUnsubscribe();
+
+  try{
+    // Futa wageni wote kwa vipande (Firestore haifuti subcollection yenyewe)
+    const guestsRef = db.collection('events').doc(eventId).collection('guests');
+    while(true){
+      const snap = await guestsRef.limit(400).get();
+      if(snap.empty) break;
+      const batch = db.batch();
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+
+    // Kisha futa tukio lenyewe
+    await db.collection('events').doc(eventId).delete();
+
+    if(editingEventId === eventId) cancelEditEvent();
+    await loadEvents();
+    document.getElementById('selectEvent').value = '';
+    await onEventSelected('');
+    msg.textContent = 'Tukio "' + jina + '" limefutwa.';
+  }catch(err){
+    console.error(err);
+    msg.textContent = 'Hitilafu wakati wa kufuta: ' + err.message;
+    // Rudisha orodha ya moja kwa moja kama kufuta kumeshindwa
+    if(activeEventId) listenToGuests(activeEventId);
+  }
+}
+
 async function onEventSelected(eventId){
+  if(editingEventId && editingEventId !== eventId) cancelEditEvent();
+
   activeEventId = eventId;
   if(!eventId){
     activeEventData = null;
+    document.getElementById('eventTools').style.display = 'none';
     document.getElementById('guestsPanel').style.display = 'none';
     document.getElementById('listSection').style.display = 'none';
     document.getElementById('emptyState').style.display = 'block';
@@ -104,6 +196,7 @@ async function onEventSelected(eventId){
     }
     activeEventData = doc.data();
 
+    document.getElementById('eventTools').style.display = 'flex';
     document.getElementById('guestsPanel').style.display = 'block';
     document.getElementById('listSection').style.display = 'block';
     document.getElementById('emptyState').style.display = 'none';
