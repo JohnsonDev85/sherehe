@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOHCARDS - Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- QR Code generator -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">JOHCARDS &middot; ADMIN PANEL</div>
+      <h1>Usimamizi wa Matukio na Wageni</h1>
+      <p>Unda tukio, ongeza wageni, tengeneza QR ya kila mgeni.</p>
+    </header>
+
+    <!-- SEHEMU 1: TUKIO -->
+    <div class="panel">
+      <div class="section-title">1. Tukio <div class="divider"></div></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="selectEvent">Chagua Tukio Lililopo</label>
+          <select id="selectEvent">
+            <option value="">— Chagua tukio —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="or-line"><span>au unda tukio jipya</span></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="eventName">Jina la Tukio</label>
+          <input type="text" id="eventName" placeholder="mfano: Harusi ya Julieth" />
+        </div>
+        <div class="field">
+          <label for="eventCode">CODE Fupi</label>
+          <input type="text" id="eventCode" placeholder="mfano: JULIETH2026" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="eventDate">Tarehe</label>
+          <input type="date" id="eventDate" />
+        </div>
+        <div class="field">
+          <label for="eventVenue">Venue</label>
+          <input type="text" id="eventVenue" placeholder="mfano: Mombasa Palms Hotel" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" onclick="createNewEvent()">Unda Tukio Jipya</button>
+        <span class="status-msg" id="eventStatusMsg"></span>
+      </div>
+    </div>
+
+    <!-- SEHEMU 2: WAGENI -->
+    <div class="panel" id="guestsPanel" style="display:none;">
+      <div class="section-title">2. Ongeza Wageni <div class="divider"></div></div>
+      <div class="active-event-tag" id="activeEventTag"></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="guestNames">Majina na Namba za Wageni</label>
+          <textarea id="guestNames" placeholder="Jina, Namba ya Simu - moja kwa kila mstari, mfano:&#10;Amina Juma, 0712345678&#10;Baraka Mushi, 0755123456"></textarea>
+          <div class="hint">Andika: Jina, Namba (ukitenganisha kwa comma). Namba itakusaidia kumtafuta mgeni na kutuma kadi kwa WhatsApp.</div>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="guestPaid">Hali ya Malipo ya Wageni Hawa</label>
+          <select id="guestPaid">
+            <option value="false">Hawajalipa</option>
+            <option value="true">Wamelipa</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="guestAina">Aina ya Kadi</label>
+          <select id="guestAina">
+            <option value="single">Single (mtu 1)</option>
+            <option value="double">Double (watu 2)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" onclick="addGuests()">Ongeza Wageni + Tengeneza QR</button>
+        <span class="count-tag" id="guestCountTag"></span>
+      </div>
+    </div>
+
+    <!-- SEHEMU 3: ORODHA -->
+    <div id="listSection" style="display:none;">
+      <div class="section-title">3. Orodha ya Wageni <div class="divider"></div></div>
+      <div class="grid" id="guestGrid"></div>
+    </div>
+
+    <div class="empty" id="emptyState">Chagua au unda tukio kuanza kuongeza wageni.</div>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
