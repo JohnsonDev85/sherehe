@@ -47,7 +47,7 @@ async function loadEvents(){
   const select = document.getElementById('selectEvent');
   try{
     const snap = await db.collection('events').orderBy('createdAt', 'desc').get();
-    select.innerHTML = '<option value="">— Chagua tukio —</option>';
+    select.innerHTML = '<option value="">— Select Event —</option>';
     snap.forEach(doc => {
       const d = doc.data();
       const opt = document.createElement('option');
@@ -119,16 +119,16 @@ function startEditEvent(){
   document.getElementById('eventDate').value = activeEventData.date || '';
   document.getElementById('eventVenue').value = activeEventData.venue || '';
 
-  document.getElementById('eventSaveBtn').textContent = 'Hifadhi Mabadiliko';
+  document.getElementById('eventSaveBtn').textContent = 'Save Changes';
   document.getElementById('eventCancelBtn').style.display = 'inline-block';
   document.getElementById('eventStatusMsg').textContent =
-    'Unahariri: ' + (activeEventData.name || '') + '. Badilisha kisha bonyeza Hifadhi Mabadiliko.';
+    'Unahariri: ' + (activeEventData.name || '') + '. Badilisha kisha bonyeza Save Changes.';
 }
 
 function cancelEditEvent(){
   editingEventId = null;
   futaFomuYaTukio();
-  document.getElementById('eventSaveBtn').textContent = 'Unda Tukio Jipya';
+  document.getElementById('eventSaveBtn').textContent = 'Create New Event';
   document.getElementById('eventCancelBtn').style.display = 'none';
   document.getElementById('eventStatusMsg').textContent = '';
 }
